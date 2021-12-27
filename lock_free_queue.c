@@ -6,30 +6,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <inttypes.h>
-
-#define LF_QUEUE_DATA_LEN   (512)
-
-struct lf_queue_node {
-    struct lf_queue_node *next;
-    uintptr_t aba;
-    char data[LF_QUEUE_DATA_LEN];
-};
-
-/* queue head and tail */
-struct lf_queue_head {
-    uintptr_t aba;
-    struct lf_queue_node *node;
-};
-
-typedef struct {
-    _Atomic struct lf_queue_head head, tail;
-    _Atomic size_t size;
-} queue_t;
-
-queue_t lf_queue;
+#include "lock_free_queue.h"
 
 #define LFQ_LOG_ERROR printf
 #define LFQ_LOG_INFO printf
+
 
 int lf_queue_init(queue_t *queue)
 {
@@ -140,51 +121,3 @@ int lf_queue_dequeue(queue_t *queue, char *data, size_t data_len)
     return 0;
 }
 
-void *lf_queue_test_write_thread(void *not_used)
-{
-    char data[LF_QUEUE_DATA_LEN];
-    int i;
-
-    for (i = 0; i < LF_QUEUE_DATA_LEN; i++) {
-        data[i] = i & 0x7f;
-    }
-
-    i = 0;
-    while(1) {
-        lf_queue_enqueue(&lf_queue, data, sizeof(data));
-
-        memcpy(data, data + 4, LF_QUEUE_DATA_LEN - 4);
-        data[LF_QUEUE_DATA_LEN - 4] = i++ & 0x7f;
-        data[LF_QUEUE_DATA_LEN - 3] = i++ & 0x7f;
-        data[LF_QUEUE_DATA_LEN - 2] = i++ & 0x7f;
-        data[LF_QUEUE_DATA_LEN - 1] = i++ & 0x7f;
-    }
-
-    return NULL;
-}
-
-void *lf_queue_test_read_thread(void *not_used)
-{
-    char data[LF_QUEUE_DATA_LEN];
-
-    while(1) {
-        lf_queue_dequeue(&lf_queue, data, sizeof(data));
-    }
-
-    return NULL;
-}
-
-int lf_queue_test(void)
-{
-    pthread_t tid;
-
-    if (lf_queue_init(&lf_queue) < 0) {
-        LFQ_LOG_ERROR("fail to init lf_queue.\n");
-        return -1;
-    }
-
-    pthread_create(&tid, NULL, lf_queue_test_write_thread, NULL);
-    pthread_create(&tid, NULL, lf_queue_test_read_thread, NULL);
-
-    return 0;    
-}
