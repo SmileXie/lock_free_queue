@@ -50,7 +50,7 @@ if (memcmp(obj, expected, sizeof *obj) == 0) {
 * 将队头node的next指针指向新加入的节点。
 * 将queue_t.tail.node队尾指针指向新加入的节点
 
-# 出队操作
+### 出队操作
 
 执行一个CAS：
 
