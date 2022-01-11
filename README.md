@@ -38,7 +38,7 @@ if (memcmp(obj, expected, sizeof *obj) == 0) {
 无锁队列的数据结构如下图所示。
 
 * 设计`struct lf_queue_head`用于存储队头，队尾，它的node成员，分别指向队头和队尾。
-* `struct lf_queue_node`表示队列节点，其next指针指向队尾方向的下一节点
+* `struct lf_queue_node`表示队列节点，其中包含info子成员，用于原子操作。info.next指向tail方向的下一节点。
 * `struct lf_queue_node`和`struct lf_queue_head`都有aba成员，用于操作计数统计以避免ABA问题。
 
 ![无锁队列数据结构](https://xs-upload.oss-cn-hangzhou.aliyuncs.com/img/lf_queue.png)
@@ -58,3 +58,8 @@ if (memcmp(obj, expected, sizeof *obj) == 0) {
 
 队头指针原来指向的节点，即是出队的节点。
 
+### 占位符节点（placeholder）
+
+为了简化设计，队列中始终保持有一个节点。如果要dequeue最后一个节点时，需要多enqueue一个节点，以便将那个期望的节点“顶出”。这个多enqueue的节点，就是占位符节点。
+
+enqueue一个新节点时，如果队列中有占位符节点。会自动将其dequeue，上层业务不感知占位符节点。
