@@ -9,9 +9,14 @@
 
 #define LF_QUEUE_DATA_LEN   (512)
 
-struct lf_queue_node {
+struct lf_queue_node_info {
     struct lf_queue_node *next;
+    bool is_placeholder;
     uintptr_t aba;
+};
+
+struct lf_queue_node {
+    _Atomic struct lf_queue_node_info info;
     char data[LF_QUEUE_DATA_LEN];
 };
 
